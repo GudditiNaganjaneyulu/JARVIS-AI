@@ -1,0 +1,22 @@
+{
+  "name": "jarvis-ai",
+  "version": "1.0.0",
+  "description": "Jarvis AI Backend with Grok + MongoDB + Upstash Redis",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "dependencies": {
+    "@upstash/redis": "^1.36.2",
+    "axios": "^1.13.5",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "express-oauth2-jwt-bearer": "^1.7.4",
+    "mongoose": "^9.2.1",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
+  }
+}
