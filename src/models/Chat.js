@@ -6,4 +6,6 @@ const ChatSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+ChatSchema.index({ prompt: "text" }); // IMPORTANT
+
 module.exports = mongoose.model("Chat", ChatSchema);

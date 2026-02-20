@@ -11,46 +11,74 @@ async function streamGrok(prompt, onChunk) {
         "Content-Type": "application/json",
       },
       data: {
-        model: "llama-3.1-8b-instant", // ✅ FREE TIER MODEL
+        model: "llama-3.1-8b-instant",
         messages: [{ role: "user", content: prompt }],
         stream: true,
       },
       responseType: "stream",
+      timeout: 60000,
     });
 
     return new Promise((resolve, reject) => {
       let fullResponse = "";
+      let buffer = "";
 
       response.data.on("data", (chunk) => {
-        const lines = chunk.toString().split("\n");
+        buffer += chunk.toString();
+
+        const lines = buffer.split("\n");
+
+        // Keep last incomplete line in buffer
+        buffer = lines.pop();
 
         for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const data = line.replace("data: ", "").trim();
+          const trimmed = line.trim();
 
-            if (data === "[DONE]") {
+          if (!trimmed || !trimmed.startsWith("data:")) continue;
+
+          const data = trimmed.replace("data:", "").trim();
+
+          if (data === "[DONE]") {
+            resolve(fullResponse);
+            return;
+          }
+
+          try {
+            const parsed = JSON.parse(data);
+
+            const content = parsed?.choices?.[0]?.delta?.content;
+
+            if (content) {
+              fullResponse += content;
+              onChunk(content);
+            }
+
+            // Finish reason check
+            if (parsed?.choices?.[0]?.finish_reason) {
               resolve(fullResponse);
               return;
             }
 
-            try {
-              const parsed = JSON.parse(data);
-              const content = parsed.choices[0]?.delta?.content;
-
-              if (content) {
-                fullResponse += content;
-                onChunk(content);
-              }
-            } catch (e) {}
+          } catch (err) {
+            // Ignore partial JSON errors safely
           }
         }
       });
 
-      response.data.on("error", reject);
+      response.data.on("end", () => {
+        resolve(fullResponse);
+      });
+
+      response.data.on("error", (err) => {
+        reject(err);
+      });
     });
 
   } catch (error) {
-    console.error("Groq API Error:", error.response?.data || error.message);
+    console.error(
+      "❌ Groq API Error:",
+      error.response?.data || error.message
+    );
     throw error;
   }
 }
